@@ -1,0 +1,36 @@
+limits:525:7:static constexpr signed char std::numeric_limits<signed char>::min()	4	static
+limits:528:7:static constexpr signed char std::numeric_limits<signed char>::max()	4	static
+limits:595:7:static constexpr unsigned char std::numeric_limits<unsigned char>::min()	4	static
+limits:598:7:static constexpr unsigned char std::numeric_limits<unsigned char>::max()	4	static
+gthr-default.h:229:1:int __gthread_key_delete(__gthread_key_t)	16	static
+portable_type_to_tflitetype.h:65:1:constexpr TfLiteType tflite::typeToTfLiteType() [with T = float]	4	static
+portable_type_to_tflitetype.h:66:1:constexpr TfLiteType tflite::typeToTfLiteType() [with T = unsigned char]	4	static
+portable_type_to_tflitetype.h:67:1:constexpr TfLiteType tflite::typeToTfLiteType() [with T = signed char]	4	static
+conv_test_common.cc:60:14:TfLiteStatus tflite::testing::InvokeConv(TfLiteTensor*, int, int, TfLiteConvParams*, TfLiteRegistration, float*)	72	static
+conv_test_common.cc:67:14:TfLiteStatus tflite::testing::InvokeConv(TfLiteTensor*, int, int, TfLiteConvParams*, TfLiteRegistration, int8_t*)	72	static
+conv_test_common.cc:74:14:TfLiteStatus tflite::testing::InvokeConv(TfLiteTensor*, int, int, TfLiteConvParams*, TfLiteRegistration, uint8_t*)	72	static
+conv_test_common.cc:81:14:TfLiteStatus tflite::testing::ValidateConvGoldens(TfLiteTensor*, int, const float*, int, TfLiteConvParams*, TfLiteRegistration, float*, float)	80	static
+conv_test_common.cc:92:14:TfLiteStatus tflite::testing::ValidateConvGoldens(TfLiteTensor*, int, const int8_t*, int, TfLiteConvParams*, TfLiteRegistration, int8_t*, float)	80	static
+conv_test_common.cc:103:14:TfLiteStatus tflite::testing::ValidateConvGoldens(TfLiteTensor*, int, const uint8_t*, int, TfLiteConvParams*, TfLiteRegistration, uint8_t*, float)	80	static
+conv_test_common.cc:114:14:TfLiteStatus tflite::testing::TestConvFloat(const int*, const float*, const int*, const float*, const int*, const float*, const int*, const float*, TfLiteConvParams*, TfLiteRegistration, float*)	368	static
+conv_test_common.cc:142:14:TfLiteStatus tflite::testing::TestConvQuantizedPerLayer(const int*, const float*, uint8_t*, float, const int*, const float*, uint8_t*, float, const int*, const float*, int32_t*, const int*, const float*, uint8_t*, float, TfLiteConvParams*, TfLiteRegistration, uint8_t*)	416	static
+conv_test_common.cc:184:14:TfLiteStatus tflite::testing::TestConvQuantizedPerChannel(const int*, const float*, int8_t*, float, int, const int*, const float*, int8_t*, const int*, const float*, int32_t*, float*, int*, const int*, const float*, int8_t*, float, int, TfLiteConvParams*, TfLiteRegistration, int8_t*)	752	static
+stl_algobase.h:198:5:constexpr const _Tp& std::min(const _Tp&, const _Tp&) [with _Tp = long int]	16	static
+conv_test_common.cc:22:14:TfLiteStatus tflite::testing::InvokeConv(TfLiteTensor*, int, int, TfLiteConvParams*, TfLiteRegistration, T*) [with T = float]	280	static
+conv_test_common.cc:22:14:TfLiteStatus tflite::testing::InvokeConv(TfLiteTensor*, int, int, TfLiteConvParams*, TfLiteRegistration, T*) [with T = signed char]	280	static
+conv_test_common.cc:22:14:TfLiteStatus tflite::testing::InvokeConv(TfLiteTensor*, int, int, TfLiteConvParams*, TfLiteRegistration, T*) [with T = unsigned char]	280	static
+conv_test_common.cc:42:14:TfLiteStatus tflite::testing::ValidateConvGoldens(TfLiteTensor*, int, const T*, int, TfLiteConvParams*, TfLiteRegistration, T*, float) [with T = float]	104	static
+conv_test_common.cc:42:14:TfLiteStatus tflite::testing::ValidateConvGoldens(TfLiteTensor*, int, const T*, int, TfLiteConvParams*, TfLiteRegistration, T*, float) [with T = signed char]	96	static
+conv_test_common.cc:42:14:TfLiteStatus tflite::testing::ValidateConvGoldens(TfLiteTensor*, int, const T*, int, TfLiteConvParams*, TfLiteRegistration, T*, float) [with T = unsigned char]	96	static
+test_helpers.h:164:14:TfLiteTensor tflite::testing::CreateTensor(const T*, TfLiteIntArray*, bool) [with T = float]	24	static
+micro_utils.h:66:6:void tflite::Quantize(const float*, T*, int, float, int) [with T = unsigned char]	48	static
+test_helpers.h:194:14:TfLiteTensor tflite::testing::CreateQuantizedTensor(const float*, T*, TfLiteIntArray*, float, int, bool) [with T = unsigned char]	48	static
+test_helpers.h:184:14:TfLiteTensor tflite::testing::CreateQuantizedTensor(const T*, TfLiteIntArray*, float, int, bool) [with T = unsigned char]	32	static
+test_helpers.h:194:14:TfLiteTensor tflite::testing::CreateQuantizedTensor(const float*, T*, TfLiteIntArray*, float, int, bool) [with T = signed char]	48	static
+test_helpers.h:184:14:TfLiteTensor tflite::testing::CreateQuantizedTensor(const T*, TfLiteIntArray*, float, int, bool) [with T = signed char]	32	static
+micro_utils.h:66:6:void tflite::Quantize(const float*, T*, int, float, int) [with T = signed char]	48	static
+micro_utils.h:35:3:T tflite::FloatToQuantizedType(float, float, int) [with T = unsigned char]	48	static
+test_helpers.h:164:14:TfLiteTensor tflite::testing::CreateTensor(const T*, TfLiteIntArray*, bool) [with T = unsigned char]	24	static
+test_helpers.h:164:14:TfLiteTensor tflite::testing::CreateTensor(const T*, TfLiteIntArray*, bool) [with T = signed char]	24	static
+micro_utils.h:35:3:T tflite::FloatToQuantizedType(float, float, int) [with T = signed char]	48	static
+stl_algobase.h:222:5:constexpr const _Tp& std::max(const _Tp&, const _Tp&) [with _Tp = long int]	16	static
