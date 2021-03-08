@@ -53,21 +53,44 @@ TIM_HandleTypeDef htim16;
 
 UART_HandleTypeDef huart2;
 
+const int LSTM_HIDDEN_SIE = 16;
+
+const int DENSE_UNIT = 30;
+
 /* USER CODE BEGIN PV */
 // TFLite globals
 namespace {
   tflite::ErrorReporter* error_reporter = nullptr;
-  const tflite::Model* model = nullptr;
-  tflite::MicroInterpreter* interpreter = nullptr;
-  TfLiteTensor* model_input = nullptr;
-  TfLiteTensor* model_output = nullptr;
+  const tflite::Model* lstm_model = nullptr; // lstm model
+
+  const tflite::Model* dense_model = nullptr; // dense model
+
+  tflite::MicroInterpreter* lstm_interpreter = nullptr; // lstm_interpreter
+
+  tflite::MicroInterpreter* dense_interpreter = nullptr; // dense_interpreter
+
+  TfLiteTensor* lstm_input = nullptr;
+  TfLiteTensor* lstm_state_h_fw = nullptr;
+  TfLiteTensor* lstm_state_c_fw = nullptr;
+  TfLiteTensor* lstm_state_h_out_fw = nullptr;
+  TfLiteTensor* lstm_state_c_out_fw = nullptr;
+  TfLiteTensor* lstm_output_out_fw = nullptr;
+
+  TfLiteTensor* dense_input = nullptr;
+  TfLiteTensor* last_output = nullptr;
+
+  float lstm_outputs_buffer[1][LSTM_HIDDEN_SIE];
 
   // Create an area of memory to use for input, output, and other TensorFlow
   // arrays. You'll need to adjust this by compiling, running, and looking
   // for errors.
-  constexpr int kTensorArenaSize = 100 * 1024;
-  //__attribute__((aligned(16)))uint8_t tensor_arena[kTensorArenaSize];
-  uint8_t tensor_arena[kTensorArenaSize];
+  constexpr int lstm_kTensorArenaSize = 20 * 1024;
+    //__attribute__((aligned(16)))uint8_t tensor_arena[kTensorArenaSize];
+    uint8_t lstm_tensor_arena[lstm_kTensorArenaSize];
+
+  constexpr int dense_kTensorArenaSize = 50 * 1024;
+	  //__attribute__((aligned(16)))uint8_t tensor_arena[kTensorArenaSize];
+  uint8_t dense_tensor_arena[dense_kTensorArenaSize];
 } // namespace
 
 /* USER CODE END PV */
@@ -107,7 +130,9 @@ int main(void)
 
   float y_val;
 
-  uint32_t inference_time;
+  uint32_t total_inference_time;
+
+  uint32_t lstm_inference_time;
 
   /* USER CODE END 1 */
 
@@ -142,43 +167,65 @@ int main(void)
 
 
   // Map the model into a usable data structure
-  model = tflite::GetModel(g_model);
+  lstm_model = tflite::GetModel(_content_lstm_model_fw_tflite);
 
-  if (model->version() != TFLITE_SCHEMA_VERSION)
+  if (lstm_model->version() != TFLITE_SCHEMA_VERSION)
   {
-	  error_reporter->Report("Model version does not match Schema");
-	  while(1);
+	  error_reporter->Report("LSTM Model version does not match Schema");
+  	  while(1);
   }
+
+  dense_model = tflite::GetModel(_content_dense_model_tflite);
+
+  if (dense_model->version() != TFLITE_SCHEMA_VERSION)
+  {
+  	  error_reporter->Report("Dense Model version does not match Schema");
+  	  while(1);
+  }
+
 
   static tflite::AllOpsResolver resolver;
 
-  // Build an interpreter to run the model with.
-  static tflite::MicroInterpreter static_interpreter(model,
-  		  resolver, tensor_arena, kTensorArenaSize, error_reporter);
+  static tflite::MicroInterpreter dense_static_interpreter(dense_model,
+      		  resolver, dense_tensor_arena, dense_kTensorArenaSize, error_reporter);
 
-  interpreter = &static_interpreter;
+  dense_interpreter = &dense_static_interpreter;
+
+  // Build an interpreter to run the model with.
+  static tflite::MicroInterpreter lstm_static_interpreter(lstm_model,
+  		  resolver, lstm_tensor_arena, lstm_kTensorArenaSize, error_reporter);
+
+  lstm_interpreter = &lstm_static_interpreter;
+
 
   // Allocate memory from the tensor_arena for the model's tensors.
-  tflite_status = interpreter->AllocateTensors();
-  if (tflite_status != kTfLiteOk)
+  TfLiteStatus dense_allocate_tflite_status = dense_interpreter->AllocateTensors();
+
+  if (dense_allocate_tflite_status != kTfLiteOk)
   {
-	  error_reporter->Report("AllocateTensors() failed");
+  	  error_reporter->Report("Dense AllocateTensors() failed");
+  	  while(1);
+  }
+
+
+  TfLiteStatus lstm_allocate_tflite_status = lstm_interpreter->AllocateTensors();
+
+  if (lstm_allocate_tflite_status != kTfLiteOk)
+  {
+  	  error_reporter->Report("LSTM AllocateTensors() failed");
   	  while(1);
   }
 
   // Assign model input and output buffers (tensors) to pointers
-  model_input = interpreter->input(0);
+  lstm_input = lstm_interpreter->input(0);
+  lstm_state_h_fw = lstm_interpreter->input(1);
+  lstm_state_c_fw = lstm_interpreter->input(2);
+  lstm_output_out_fw = lstm_interpreter->output(0);
+  lstm_state_h_out_fw = lstm_interpreter->output(1);
+  lstm_state_c_out_fw = lstm_interpreter->output(1);
 
-  model_output = interpreter->output(0);
-
-  // Get number of elements in input tensor
-  num_elements = model_input->bytes / sizeof(float);
-
-  buf_len = sprintf(buf, "Number of input elements: %lu\r\n", num_elements);
-
-  HAL_UART_Transmit(&huart2, (uint8_t *)buf, buf_len, 100);
-
-
+  dense_input = dense_interpreter->input(0);
+  last_output = dense_interpreter->output(0);
 
   /* USER CODE END 2 */
 
@@ -188,43 +235,55 @@ int main(void)
   {
 	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
 
-	  // Fill input buffer (use test value)
-#if WITH_INTEGER_OPTIMIZATION
-	  // Quantize the input from floating-point to integer
-	  int8_t x_quantized = value_test / model_input->params.scale + model_input->params.zero_point;
-	  // Place the quantized input in the model's input tensor
-	  model_input->data.int8[0] = x_quantized;
-#else
-	  for (uint32_t i = 0; i < num_elements; i++)
+	  for (int j = 0; j < LSTM_HIDDEN_SIE; j++)
 	  {
-		  model_input->data.f[i] = value_test;
+		  lstm_state_h_fw->data.f[j] = 0.0;
+		  lstm_state_c_fw->data.f[j] = 0.0;
 	  }
-#endif
+
+	  lstm_input->data.f[0] = value_test;
 
 	  // Get current timestamp
 	  timestamp = htim16.Instance->CNT;
 
 	  // Run inference
-	  tflite_status = interpreter->Invoke();
+	  tflite_status = lstm_interpreter->Invoke();
 	  if (tflite_status != kTfLiteOk)
 	  {
-		  error_reporter->Report("Invoke failed");
+		  error_reporter->Report("LSTM invoke failed");
 	  }
 
-#if WITH_INTEGER_OPTIMIZATION
-  // Obtain the quantized output from model's output tensor
-   int8_t y_quantized = model_output->data.int8[0];
-   // Dequantize the output from integer to floating-point
-   y_val = (y_quantized - model_output->params.zero_point) * model_output->params.scale;
-#else
-   // Read output (predicted y) of neural network
-   y_val = model_output->data.f[0];
-#endif
+	  // Get outputs
+	  /*
+	  for (int j = 0; j < LSTM_HIDDEN_SIE; j++)
+	  {
+		  lstm_outputs_buffer[1][j] = lstm_output_out_fw->data.f[j];
+	  }
+	  */
 
-	  inference_time = htim16.Instance->CNT - timestamp;
+	  lstm_inference_time = htim16.Instance->CNT - timestamp;
+
+	  // Feed input for dense network
+	  for (int j = 0; j < LSTM_HIDDEN_SIE; j++)
+	  {
+		  dense_input->data.f[j] = lstm_output_out_fw->data.f[j];
+	  }
+	  // Run dense network inference
+	  tflite_status = dense_interpreter->Invoke();
+
+	  if (tflite_status != kTfLiteOk)
+	  {
+		  error_reporter->Report("Dense invoke failed");
+	  }
+
+
+	  // Read output (predicted y) of neural network
+	  y_val = last_output->data.f[0];
+
+	  total_inference_time = htim16.Instance->CNT - timestamp;
 
 	  buf_len = sprintf(buf, "Output: %f | Duration: %lu\r\n",
-	  	  			  y_val, inference_time);
+			  y_val, total_inference_time);
 
 	  HAL_UART_Transmit(&huart2, (uint8_t *)buf, buf_len, 100);
 
