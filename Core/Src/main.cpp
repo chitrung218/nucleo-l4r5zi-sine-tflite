@@ -160,7 +160,8 @@ int main(void)
   // Start timer/counter
   HAL_TIM_Base_Start(&htim16);
 
-
+  buf_len = sprintf(buf, "\r\n\r\nSTM32 TF test\r\n");
+  HAL_UART_Transmit(&huart2, (uint8_t *)buf, buf_len, 100);
   // Set up logging (modify tensorflow/lite/micro/debug_log.cc)
   static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
